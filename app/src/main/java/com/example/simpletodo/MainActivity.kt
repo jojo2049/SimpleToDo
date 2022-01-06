@@ -1,5 +1,6 @@
 package com.example.simpletodo
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import org.apache.commons.io.FileUtils
@@ -16,6 +17,7 @@ class MainActivity : AppCompatActivity() {
 
     var listOfTasks = mutableListOf<String>()
     lateinit var adapter : TaskItemAdapter
+    val requestCodeStart = 20
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +33,15 @@ class MainActivity : AppCompatActivity() {
                 saveItems()
             }
         }
+
+        val onClickListener = object : TaskItemAdapter.OnClickListener {
+            override fun onItemClicked(position: Int) {
+                var taskToEdit = listOfTasks.get(position)
+                launchEditView(taskToEdit, position)
+            }
+        }
+
+
 //        // Detect when user clicks on 'Add' button
 //        findViewById<Button>(R.id.button).setOnClickListener {
 //            //This code is executed when button is clicked
@@ -43,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
 
         // Create adapter passing in the sample user data
-        adapter = TaskItemAdapter(listOfTasks, onLongClickListener)
+        adapter = TaskItemAdapter(listOfTasks, onLongClickListener, onClickListener)
 
         // Attach the adapter to the recyclerview to populate items
         recyclerView.adapter = adapter
@@ -68,6 +79,22 @@ class MainActivity : AppCompatActivity() {
             saveItems()
         }
     }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (resultCode == RESULT_OK && requestCode == requestCodeStart) {
+            val newRow = data?.getStringExtra("newRow")
+            val position = data?.getIntExtra("position", 0)
+
+            if (newRow != null && position != null) {
+                listOfTasks.set(position, newRow)
+                adapter.notifyItemChanged(position)
+                saveItems()
+            }
+        }
+    }
+
 
     // Save the data that user has added, by writing and readiing from a file
 
@@ -96,6 +123,18 @@ class MainActivity : AppCompatActivity() {
         } catch (ioException: IOException) {
             ioException.printStackTrace()
         }
+    }
+
+
+
+    fun launchEditView(string: String, int: Int) {
+        // first parameter is the context, second is the class of the activity to launch
+        val i = Intent(this, EditActivity::class.java)
+        i.putExtra("row", string)
+        i.putExtra("position", int)
+        startActivityForResult(i, requestCodeStart) // brings up the second activity
+
+
     }
 
 }
